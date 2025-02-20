@@ -1,13 +1,18 @@
 import matplotlib.pyplot as plt
 
-class BracketGenerator:
-    def __init__(self, class_size):
-        self.team_height = 1.0
-        self.round_width = 4.0
-        self.text_offset = 0.0
-        self.class_size = class_size
-        self.matchup_pairs = self.get_seed_pairs(self.class_size)
-
+class BracketDrawer:
+    def __init__(self, tournament_size):
+        try:
+            self.team_height = 1.0
+            self.round_width = 4.0
+            self.text_offset = 0.0
+            self.tournament_size = tournament_size
+            if tournament_size % 4 != 0:
+                raise ValueError("Tournament size must be divisible by 4 in order to get proper quadrants")
+            self.matchup_pairs = self.get_seed_pairs(self.tournament_size)
+        except ValueError as e:
+            print(f"Error: {e}")
+            raise
             
 
     def draw_bracket(self, left_teams, right_teams, title="", logo_path="", subtitle_left="", subtitle_right="", social_handle="", website=""):
@@ -31,35 +36,28 @@ class BracketGenerator:
             This will order teams in the order that they are provided in the left_teams and right_teams arguments, 
             and split them into top and bottom halves so that they are on opposite sides of the bracket.
         """
-        total_teams = len(left_teams)
-        fig_height = total_teams * self.team_height + 2
+        fig_height = ((len(left_teams) + len(right_teams)) / 2) * self.team_height + 2
         fig_width = 30
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(fig_width, fig_height))
         
         # Split each region's teams into top and bottom halves
-        if self.class_size == 32:   
-            # Assumes teams are already in proper seed order
-            north_top = left_teams[:8]      # Teams 1,16,8,9,4,13,5,12
-            north_bottom = left_teams[8:]    # Teams 3,14,6,11,7,10,2,15
-            south_top = right_teams[:8]       # Teams 1,16,8,9,4,13,5,12
-            south_bottom = right_teams[8:]    # Teams 3,14,6,11,7,10,2,15
-        elif self.class_size == 16:
-            north_top = left_teams[:4]
-            north_bottom = left_teams[4:]
-            south_top = right_teams[:4]
-            south_bottom = right_teams[4:]
+        # Assumes teams are already in proper seed order
+        left_top = left_teams[:len(left_teams)//2]
+        left_bottom = left_teams[len(left_teams)//2:]
+        right_top = right_teams[:len(right_teams)//2]
+        right_bottom = right_teams[len(right_teams)//2:]
         
-        # Left bracket: North top, South bottom
-        left_bracket = north_top + south_bottom
+        # Left bracket: left top, right bottom
+        left_bracket = left_top + right_bottom
         
-        # Right bracket: South top, North bottom
-        right_bracket = south_top + north_bottom
+        # Right bracket: right top, left bottom
+        right_bracket = right_top + left_bottom
         
         # Draw left bracket (pointing right)
-        self._draw_sub_bracket(ax1, left_bracket, subtitle_left, direction=1)
+        self._draw_sub_bracket(ax1, left_bracket, title=subtitle_left, direction=1)
         
         # Draw right bracket (pointing left)
-        self._draw_sub_bracket(ax2, right_bracket, subtitle_right, direction=-1)
+        self._draw_sub_bracket(ax2, right_bracket, title=subtitle_right, direction=-1)
         
         plt.subplots_adjust(wspace=-0.2) #Brings bracket sides closer together
         fig.suptitle(title, fontsize=20) #Set title argument as super title
@@ -75,6 +73,22 @@ class BracketGenerator:
         # Add twitter handle and website
         if social_handle and website:
             fig.text(0.95, 0.02, f"{social_handle} | {website}", 
+                    horizontalalignment='right',
+                    verticalalignment='bottom',
+                    fontsize=10.5,
+                    style='italic',
+                    color='black')
+            
+        if social_handle and not website:
+            fig.text(0.95, 0.02, f"{social_handle}", 
+                    horizontalalignment='right',
+                    verticalalignment='bottom',
+                    fontsize=10.5,
+                    style='italic',
+                    color='black')
+            
+        if website and not social_handle:
+            fig.text(0.95, 0.02, f"{website}", 
                     horizontalalignment='right',
                     verticalalignment='bottom',
                     fontsize=10.5,
@@ -116,11 +130,11 @@ class BracketGenerator:
             
             # Draw the horizontal line and text
             if direction == 1:
-                ax.plot([-2.5, 0], [y, y], 'k-', linewidth=1)  # North bracket first round line length 
-                ax.text(-0.5, y + 0.1, team, ha='center', va='center', fontsize=10.5, family='monospace', fontweight='bold') # North bracket first round text position
+                ax.plot([-2.5, 0], [y, y], 'k-', linewidth=1)  # left bracket first round line length 
+                ax.text(-0.5, y + 0.1, team, ha='center', va='center', fontsize=10.5, family='monospace', fontweight='bold') # left bracket first round text position
             else:
-                ax.plot([self.round_width * num_rounds, self.round_width * num_rounds + 2.5], [y, y], 'k-', linewidth=1)  # South bracket first round line length
-                ax.text(self.round_width * num_rounds + 0.5, y + 0.1, team, ha='center', va='center', fontsize=10.5, family='monospace', fontweight='bold') # South bracket first round text position
+                ax.plot([self.round_width * num_rounds, self.round_width * num_rounds + 2.5], [y, y], 'k-', linewidth=1)  # right bracket first round line length
+                ax.text(self.round_width * num_rounds + 0.5, y + 0.1, team, ha='center', va='center', fontsize=10.5, family='monospace', fontweight='bold') # right bracket first round text position
 
         # Draw rounds
         for round_num in range(num_rounds):
@@ -149,12 +163,12 @@ class BracketGenerator:
 
     def get_tournament_seeds(self, df, swap_teams=None, append = ""):
         """
-        Get first round paired matchups
+        Get first round paired matchups and applies seeds, labels.
 
         Args:
             df(DataFrame): dataframe of teams
             swap_teams(tuple): tuple of seeds to swap if needed
-            append(str): string to append to the team labels
+            append(str): string to append to the team labels. (Ex. "North" or "South")
 
         Returns:
             List of paired teams in order for the first round
@@ -186,11 +200,11 @@ class BracketGenerator:
         return ordered_teams
     
 
-    def get_seed_pairs(self, class_size):
+    def get_seed_pairs(self, tournament_size):
         """
         Get matchup pairs for the tournament
         """
-        if class_size == 32:
+        if tournament_size == 32:
             return [(1, 16), (8, 9), (4, 13), (5, 12), (3, 14), (6, 11), (7, 10), (2, 15)]
-        elif class_size == 16:
+        elif tournament_size == 16:
             return [(1, 8), (4, 5), (3, 6), (2, 7)]
