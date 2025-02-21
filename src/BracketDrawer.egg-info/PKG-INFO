@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: BracketDrawer
+Version: 0.1.0
+Summary: A Python Package to easily create tournament brackets
+Home-page: https://github.com/bendemouth/BracketDrawer
+Author: Ben DeMouth
+Author-email: bendemouth@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+License-File: LICENSE
+Requires-Dist: matplotlib
+Requires-Dist: pandas

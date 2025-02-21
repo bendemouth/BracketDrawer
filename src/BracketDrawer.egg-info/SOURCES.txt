@@ -1,0 +1,8 @@
+LICENSE
+README.md
+setup.py
+src/BracketDrawer.egg-info/PKG-INFO
+src/BracketDrawer.egg-info/SOURCES.txt
+src/BracketDrawer.egg-info/dependency_links.txt
+src/BracketDrawer.egg-info/requires.txt
+src/BracketDrawer.egg-info/top_level.txt
