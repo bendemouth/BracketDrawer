@@ -15,19 +15,21 @@ class BracketDrawer:
             raise
             
 
-    def draw_bracket(self, left_teams, right_teams, title="", logo_path="", subtitle_left="", subtitle_right="", social_handle="", website=""):
+    def draw_bracket(self, left_teams, right_teams, **kwargs):
         """
         Main draw bracket method
 
         Args:
             left_teams(list): list of team labels for the left bracket
             right_teams(list): list of team labels for the right bracket
-            title(str): string for the title
-            logo_path(str): image path for a logo to add to the middle of the bracket
-            subtitle_left(str): string for the left bracket subtitle
-            subtitle_right(str): string for the right bracket subtitle
-            social_handle(str): string for the social handle to display in corner
-            website(str): string for the website in corner
+        
+            **kwargs:
+                title(str): string for the title
+                logo_path(str): image path for a logo to add to the middle of the bracket
+                subtitle_left(str): string for the left bracket subtitle
+                subtitle_right(str): string for the right bracket subtitle
+                social_handle(str): string for the social handle to display in corner
+                website(str): string for the website in corner
 
         Returns:
             fig: matplotlib figure object
@@ -36,6 +38,14 @@ class BracketDrawer:
             This will order teams in the order that they are provided in the left_teams and right_teams arguments, 
             and split them into top and bottom halves so that they are on opposite sides of the bracket.
         """
+
+        title = kwargs.get('title', "")
+        logo_path = kwargs.get('logo_path', "")
+        subtitle_left = kwargs.get('subtitle_left', "")
+        subtitle_right = kwargs.get('subtitle_right', "")
+        social_handle = kwargs.get('social_handle', "")
+        website = kwargs.get('website', "")
+
         fig_height = ((len(left_teams) + len(right_teams)) / 2) * self.team_height + 2
         fig_width = 30
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(fig_width, fig_height))
@@ -70,41 +80,32 @@ class BracketDrawer:
             logo_ax.imshow(logo_img)
             logo_ax.axis('off')
 
-        # Add twitter handle and website
-        if social_handle and website:
-            fig.text(0.95, 0.02, f"{social_handle} | {website}", 
-                    horizontalalignment='right',
-                    verticalalignment='bottom',
-                    fontsize=10.5,
-                    style='italic',
-                    color='black')
-            
-        if social_handle and not website:
-            fig.text(0.95, 0.02, f"{social_handle}", 
-                    horizontalalignment='right',
-                    verticalalignment='bottom',
-                    fontsize=10.5,
-                    style='italic',
-                    color='black')
-            
-        if website and not social_handle:
-            fig.text(0.95, 0.02, f"{website}", 
-                    horizontalalignment='right',
-                    verticalalignment='bottom',
-                    fontsize=10.5,
-                    style='italic',
-                    color='black')
+        # Add social media handle and website
+        footer = []
 
+        if social_handle:
+            footer.append(social_handle)
+
+        if website:
+            footer.append(website)
+
+        if footer:
+            fig.text(0.95, 0.02, " | ".join(footer), 
+                    horizontalalignment='right',
+                    verticalalignment='bottom',
+                    fontsize=10.5,
+                    style='italic',
+                    color='black')
+            
         return fig
-
-    def _draw_sub_bracket(self, ax, teams, subtitle, direction=1):
+    def _draw_sub_bracket(self, ax, teams, title, direction=1):
         """
         Helper method for main draw_bracket method
 
         Args:
             ax(matplotlib axes object): matplotlib axes object
             teams(list): list of team labels
-            subtitle(str): string for the subtitle
+            title(str): string for the title, will serve as subtitle for full bracket
             direction(int): 1 for right, -1 for left
 
         Returns:
@@ -117,7 +118,7 @@ class BracketDrawer:
         ax.set_xlim(-2, self.round_width * (num_rounds + 1))
         ax.set_ylim(-1, num_teams * self.team_height + 1)
         ax.axis('off')
-        ax.set_title(subtitle, fontsize=12)
+        ax.set_title(title, fontsize=12)
         
         # Draw initial team positions
         positions = []
@@ -180,8 +181,12 @@ class BracketDrawer:
         # Add seed column
         df_copy['seed'] = range(1, len(df_copy) + 1)
 
-        # Add team label column
-        df_copy['team_label'] = "#" + df_copy['seed'].astype(str) + " " + append + " - " + df_copy['Team']
+        if append:
+            # Add team label column
+            df_copy['team_label'] = "#" + df_copy['seed'].astype(str) + " " + append + " - " + df_copy['Team']
+        else:
+            # Add team label column
+            df_copy['team_label'] = "#" + df_copy['seed'].astype(str) + " - " + df_copy['Team']
         
         # If swap_teams is provided, swap the specified seeds
         if swap_teams:
@@ -204,7 +209,9 @@ class BracketDrawer:
         """
         Get matchup pairs for the tournament
         """
-        if tournament_size == 32:
-            return [(1, 16), (8, 9), (4, 13), (5, 12), (3, 14), (6, 11), (7, 10), (2, 15)]
-        elif tournament_size == 16:
-            return [(1, 8), (4, 5), (3, 6), (2, 7)]
+        pairs = []
+
+        for i in range(1, tournament_size // 2 + 1):
+            pairs.append((i, tournament_size + 1 - i))
+
+        return pairs
