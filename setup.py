@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='BracketDrawer',
-    version='0.1.0',
+    version='0.1.1',
     author="Ben DeMouth",
     author_email="bendemouth@gmail.com",
     url="https://github.com/bendemouth/BracketDrawer",
