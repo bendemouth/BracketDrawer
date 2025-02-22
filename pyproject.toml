@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "BracketDrawer"
-version = "0.1.1"
+version = "0.1.2"
 description = "A Python Package to easily create tournament brackets"
 readme = "README.md"
 requires-python = ">=3.7"
