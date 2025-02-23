@@ -7,8 +7,8 @@ class BracketDrawer:
             self.round_width = 4.0
             self.text_offset = 0.0
             self.tournament_size = tournament_size
-            if tournament_size % 4 != 0:
-                raise ValueError("Tournament size must be divisible by 4 in order to get proper quadrants")
+            if tournament_size <= 0 or (tournament_size & (tournament_size - 1) != 0):
+                raise ValueError("Tournament size must be a power of two (Ex. 2, 4, 8, 16, 32, 64, etc.)")
             self.matchup_pairs = self.get_seed_pairs(self.tournament_size)
         except ValueError as e:
             print(f"Error: {e}")
@@ -30,6 +30,8 @@ class BracketDrawer:
                 subtitle_right(str): string for the right bracket subtitle
                 social_handle(str): string for the social handle to display in corner
                 website(str): string for the website in corner
+                integrate_sides(bool): If true, will put top left teams and bottom right teams on same side.
+                                       If false, will keep left and right teams on the same side. Defaults to False
 
         Returns:
             fig: matplotlib figure object
@@ -45,23 +47,26 @@ class BracketDrawer:
         subtitle_right = kwargs.get('subtitle_right', "")
         social_handle = kwargs.get('social_handle', "")
         website = kwargs.get('website', "")
+        integrate_sides = kwargs.get('integrate_sides', False)
 
         fig_height = ((len(left_teams) + len(right_teams)) / 2) * self.team_height + 2
         fig_width = 30
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(fig_width, fig_height))
         
         # Split each region's teams into top and bottom halves
-        # Assumes teams are already in proper seed order
-        left_top = left_teams[:len(left_teams)//2]
-        left_bottom = left_teams[len(left_teams)//2:]
-        right_top = right_teams[:len(right_teams)//2]
-        right_bottom = right_teams[len(right_teams)//2:]
-        
-        # Left bracket: left top, right bottom
-        left_bracket = left_top + right_bottom
-        
-        # Right bracket: right top, left bottom
-        right_bracket = right_top + left_bottom
+        if integrate_sides:
+            left_top = left_teams[:len(left_teams)//2]
+            left_bottom = left_teams[len(left_teams)//2:]
+            right_top = right_teams[:len(right_teams)//2]
+            right_bottom = right_teams[len(right_teams)//2:]
+            
+            left_bracket = left_top + right_bottom
+            
+            right_bracket = right_top + left_bottom
+
+        else:
+            left_bracket = left_teams
+            right_bracket = right_teams
         
         # Draw left bracket (pointing right)
         self._draw_sub_bracket(ax1, left_bracket, title=subtitle_left, direction=1)
@@ -100,7 +105,7 @@ class BracketDrawer:
         return fig
     def _draw_sub_bracket(self, ax, teams, title, direction=1):
         """
-        Helper method for main draw_bracket method
+        Helper method for main draw_bracket method. Draws each side of the bracket.
 
         Args:
             ax(matplotlib axes object): matplotlib axes object
@@ -162,18 +167,22 @@ class BracketDrawer:
             
             positions = next_positions
 
-    def get_tournament_seeds(self, df, swap_teams=None, append = ""):
+    def get_tournament_seeds(self, df, **kwargs):
         """
         Get first round paired matchups and applies seeds, labels.
 
         Args:
             df(DataFrame): dataframe of teams
-            swap_teams(tuple): tuple of seeds to swap if needed
-            append(str): string to append to the team labels. (Ex. "North" or "South")
+            **kwargs:
+                swap_teams(tuple): tuple of seeds to swap if needed
+                append(str): string to append to the team labels. (Ex. "North" or "South")
 
         Returns:
             List of paired teams in order for the first round
         """
+        swap_teams = kwargs.get('swap_teams')
+        append = kwargs.get('append')
+
         ordered_teams = []
         # Create a copy of the dataframe to avoid modifying the original
         df_copy = df.copy()
@@ -181,11 +190,10 @@ class BracketDrawer:
         # Add seed column
         df_copy['seed'] = range(1, len(df_copy) + 1)
 
+        # Add team label column
         if append:
-            # Add team label column
             df_copy['team_label'] = "#" + df_copy['seed'].astype(str) + " " + append + " - " + df_copy['Team']
         else:
-            # Add team label column
             df_copy['team_label'] = "#" + df_copy['seed'].astype(str) + " - " + df_copy['Team']
         
         # If swap_teams is provided, swap the specified seeds
@@ -210,8 +218,8 @@ class BracketDrawer:
         Get matchup pairs for the tournament
         """
         pairs = []
-
-        for i in range(1, tournament_size // 2 + 1):
-            pairs.append((i, tournament_size + 1 - i))
-
+        
+        for i in range(1, (tournament_size // 4) + 1):
+            pairs.append((i, (tournament_size // 2) - i + 1))
+        
         return pairs

@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+setup.py
+src/BracketDrawer/__init__.py
+src/BracketDrawer/logic.py
+src/BracketDrawer.egg-info/PKG-INFO
+src/BracketDrawer.egg-info/SOURCES.txt
+src/BracketDrawer.egg-info/dependency_links.txt
+src/BracketDrawer.egg-info/requires.txt
+src/BracketDrawer.egg-info/top_level.txt
